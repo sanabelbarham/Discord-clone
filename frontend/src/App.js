@@ -4,6 +4,7 @@ import "./App.css";
 function App() {
 
   const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
 
   useEffect(() => {
     fetch("http://localhost:5000/messages")
@@ -11,6 +12,36 @@ function App() {
       .then(data => setMessages(data))
       .catch(err => console.log(err));
   }, []);
+const sendMessage = async () => {
+
+  if (input.trim() === "") return;
+
+  const newMessage = {
+    user: "You",
+    text: input
+  };
+
+  try {
+
+    const res = await fetch("http://localhost:5000/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newMessage)
+    });
+
+    const data = await res.json();
+
+    setMessages([...messages, data]);
+
+    setInput("");
+
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 
   return (
     <div className="app">
@@ -40,8 +71,13 @@ function App() {
 
         {/* Input */}
         <div className="input-area">
-          <input type="text" placeholder="Type a message..." />
-          <button>Send</button>
+         <input
+  type="text"
+  placeholder="Type a message..."
+  value={input}
+  onChange={(e) => setInput(e.target.value)}
+/>
+       <button onClick={sendMessage}>Send</button>
         </div>
 
       </div>

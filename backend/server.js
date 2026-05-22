@@ -23,6 +23,18 @@ app.get("/messages", (req, res) => {
   res.json(messages);
 });
 
+app.post("/messages", (req, res) => {
+
+  const newMessage = {
+    user: req.body.user,
+    text: req.body.text
+  };
+
+  messages.push(newMessage);
+
+  res.json(newMessage);
+});
+
 app.listen(5000, () => {
   console.log("Server running on port 5000");
 });
