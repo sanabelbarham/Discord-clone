@@ -15,12 +15,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ AUTH ROUTES
 app.use("/api/auth", authRoutes);
 
 const server = http.createServer(app);
 
-// SOCKET
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -28,28 +26,64 @@ const io = new Server(server, {
   }
 });
 
-// DB
+// DATABASE
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log(err));
 
-// SOCKET LOGIC
+// SOCKETS
 io.on("connection", async (socket) => {
+
   console.log("User connected:", socket.id);
 
-  const messages = await Message.find();
-  socket.emit("loadMessages", messages);
+  // DEFAULT CHANNEL
+  socket.join("general");
 
+  // LOAD GENERAL MESSAGES
+  const generalMessages = await Message.find({
+    channel: "general"
+  });
+
+  socket.emit("loadMessages", generalMessages);
+
+  // JOIN CHANNEL
+  socket.on("joinChannel", async (channel) => {
+
+    // leave old rooms
+    socket.rooms.forEach((room) => {
+      if (room !== socket.id) {
+        socket.leave(room);
+      }
+    });
+
+    // join new room
+    socket.join(channel);
+
+    // load channel messages
+    const messages = await Message.find({ channel });
+
+    socket.emit("loadMessages", messages);
+  });
+
+  // SEND MESSAGE
   socket.on("sendMessage", async (data) => {
-    const newMessage = new Message(data);
+
+    const newMessage = new Message({
+      user: data.user,
+      text: data.text,
+      channel: data.channel
+    });
+
     await newMessage.save();
 
-    io.emit("receiveMessage", newMessage);
+    // SEND ONLY TO CHANNEL
+    io.to(data.channel).emit("receiveMessage", newMessage);
   });
 
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });
+
 });
 
 server.listen(5000, () => {

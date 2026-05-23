@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const messageSchema = new mongoose.Schema({
   user: String,
   text: String,
+  channel: String,   // ✅ IMPORTANT
   createdAt: {
     type: Date,
     default: Date.now

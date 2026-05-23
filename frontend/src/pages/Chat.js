@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import "../App.css";
 
-const socket = io("http://localhost:5000"); // ✅ ONLY ONCE
+const socket = io("http://localhost:5000");
 
 function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+const [channel, setChannel] = useState("general");
+
 
   const user = JSON.parse(localStorage.getItem("user"))?.username;
 
@@ -25,26 +27,42 @@ function Chat() {
     };
   }, []);
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
+ const sendMessage = () => {
+  if (!input.trim()) return;
 
-    const messageData = {
-      user: user || "Guest",
-      text: input
-    };
+  socket.emit("sendMessage", {
+    user,
+    text: input,
+    channel
+  });
 
-    socket.emit("sendMessage", messageData); // ✅ SAME SOCKET
+  setInput("");
+};
+const joinChannel = (channelName) => {
+  setChannel(channelName);          // update UI state
+  setMessages([]);                  // clear old messages (important)
 
-    setInput("");
-  };
+  socket.emit("joinChannel", channelName); // tell backend to switch room
+};
 
   return (
     <div className="app">
 
-      <div className="sidebar">
-        <h2>Channels</h2>
-        <div className="channel"># general</div>
-      </div>
+     <div className="sidebar">
+  <h2>Channels</h2>
+
+  <div className="channel" onClick={() => joinChannel("general")}>
+    # general
+  </div>
+
+  <div className="channel" onClick={() => joinChannel("gaming")}>
+    # gaming
+  </div>
+
+  <div className="channel" onClick={() => joinChannel("music")}>
+    # music
+  </div>
+</div>
 
       <div className="chat">
 
