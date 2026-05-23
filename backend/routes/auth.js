@@ -8,50 +8,41 @@ const router = express.Router();
 
 // REGISTER
 router.post("/register", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    const existingUser = await User.findOne({ username });
-    if (existingUser) return res.status(400).json({ message: "User exists" });
+  const exists = await User.findOne({ username });
+  if (exists) return res.status(400).json({ message: "User exists" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  const hashed = await bcrypt.hash(password, 10);
 
-    const newUser = new User({
-      username,
-      password: hashedPassword
-    });
+  await new User({
+    username,
+    password: hashed
+  }).save();
 
-    await newUser.save();
-
-    res.json({ message: "User created" });
-
-  } catch (err) {
-    res.status(500).json(err);
-  }
+  res.json({ message: "User created" });
 });
 
 // LOGIN
 router.post("/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    const user = await User.findOne({ username });
-    if (!user) return res.status(400).json({ message: "User not found" });
+  const user = await User.findOne({ username });
+  if (!user) return res.status(400).json({ message: "User not found" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Wrong password" });
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) return res.status(400).json({ message: "Wrong password" });
 
-    const token = jwt.sign(
-      { id: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
+  const token = jwt.sign(
+    { id: user._id, username: user.username },
+    "SECRET",
+    { expiresIn: "1d" }
+  );
 
-    res.json({ token, username: user.username });
-
-  } catch (err) {
-    res.status(500).json(err);
-  }
+  res.json({
+    token,
+    username: user.username
+  });
 });
 
 module.exports = router;

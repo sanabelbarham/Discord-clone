@@ -8,18 +8,19 @@ const { Server } = require("socket.io");
 dotenv.config();
 
 const Message = require("./models/Message");
-
-const app = express();
 const authRoutes = require("./routes/auth");
 
-app.use("/api/auth", authRoutes);
+const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+// ✅ AUTH ROUTES
+app.use("/api/auth", authRoutes);
 
 const server = http.createServer(app);
 
-
+// SOCKET
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3000",
@@ -27,37 +28,30 @@ const io = new Server(server, {
   }
 });
 
-
+// DB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log("MongoDB error:", err));
+  .catch(err => console.log(err));
 
-
+// SOCKET LOGIC
 io.on("connection", async (socket) => {
   console.log("User connected:", socket.id);
-
 
   const messages = await Message.find();
   socket.emit("loadMessages", messages);
 
-
   socket.on("sendMessage", async (data) => {
-    try {
-      const newMessage = new Message(data);
-      await newMessage.save();
+    const newMessage = new Message(data);
+    await newMessage.save();
 
-      io.emit("receiveMessage", newMessage);
-    } catch (err) {
-      console.log(err);
-    }
+    io.emit("receiveMessage", newMessage);
   });
 
   socket.on("disconnect", () => {
-    console.log("User disconnected:", socket.id);
+    console.log("User disconnected");
   });
 });
 
-
-server.listen(process.env.PORT, () => {
-  console.log(`Server running on port ${process.env.PORT}`);
+server.listen(5000, () => {
+  console.log("Server running on port 5000");
 });
