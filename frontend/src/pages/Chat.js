@@ -1,15 +1,19 @@
 import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import "../App.css";
-
+import { useNavigate } from "react-router-dom";
 const socket = io("http://localhost:5000");
 
 function Chat() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
 const [channel, setChannel] = useState("general");
 
-
+const handleLogout = () => {
+  localStorage.removeItem("user");
+  navigate("/register");
+};
   const user = JSON.parse(localStorage.getItem("user"))?.username;
 
   useEffect(() => {
@@ -83,6 +87,7 @@ const joinChannel = (channelName) => {
           <button onClick={sendMessage}>
             Send
           </button>
+          <button onClick={handleLogout}>Logout</button>
         </div>
 
       </div>
