@@ -1,40 +1,45 @@
 const express = require("express");
 const cors = require("cors");
+const http = require("http");
+const { Server } = require("socket.io");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.json({ message: "Backend is working " });
+
+const server = http.createServer(app);
+
+
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:3000",
+    methods: ["GET", "POST"]
+  }
 });
 
-app.get("/api", (req, res) => {
-  res.json({ message: "API is working " });
+let messages = [];
+
+
+io.on("connection", (socket) => {
+  console.log("User connected:", socket.id);
+
+
+  socket.emit("loadMessages", messages);
+
+
+  socket.on("sendMessage", (data) => {
+    messages.push(data);
+
+  
+    io.emit("receiveMessage", data);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("User disconnected");
+  });
 });
 
-let messages = [
-  { user: "Ali", text: "Hello " },
-  { user: "Sara", text: "Hi!" }
-];
-
-app.get("/messages", (req, res) => {
-  res.json(messages);
-});
-
-app.post("/messages", (req, res) => {
-
-  const newMessage = {
-    user: req.body.user,
-    text: req.body.text
-  };
-
-  messages.push(newMessage);
-
-  res.json(newMessage);
-});
-
-app.listen(5000, () => {
+server.listen(5000, () => {
   console.log("Server running on port 5000");
 });

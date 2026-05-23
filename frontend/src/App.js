@@ -1,47 +1,52 @@
 import { useEffect, useState } from "react";
 import "./App.css";
+import { io } from "socket.io-client";
+
+
+const socket = io("http://localhost:5000");
 
 function App() {
+
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
 
+
   useEffect(() => {
-    fetch("http://localhost:5000/messages")
-      .then(res => res.json())
-      .then(data => setMessages(data))
-      .catch(err => console.log(err));
-  }, []);
-const sendMessage = async () => {
 
-  if (input.trim() === "") return;
 
-  const newMessage = {
-    user: "You",
-    text: input
-  };
-
-  try {
-
-    const res = await fetch("http://localhost:5000/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(newMessage)
+    socket.on("loadMessages", (data) => {
+      setMessages(data);
     });
 
-    const data = await res.json();
+    socket.on("receiveMessage", (message) => {
+      setMessages((prev) => [...prev, message]);
+    });
 
-    setMessages([...messages, data]);
+
+    return () => {
+      socket.off("loadMessages");
+      socket.off("receiveMessage");
+    };
+
+  }, []);
+
+
+  const sendMessage = () => {
+
+    if (input.trim() === "") return;
+
+    const messageData = {
+      user: "You",
+      text: input
+    };
+
+   
+    socket.emit("sendMessage", messageData);
+
 
     setInput("");
-
-  } catch (err) {
-    console.log(err);
-  }
-};
-
+  };
 
   return (
     <div className="app">
@@ -71,13 +76,18 @@ const sendMessage = async () => {
 
         {/* Input */}
         <div className="input-area">
-         <input
-  type="text"
-  placeholder="Type a message..."
-  value={input}
-  onChange={(e) => setInput(e.target.value)}
-/>
-       <button onClick={sendMessage}>Send</button>
+
+          <input
+            type="text"
+            placeholder="Type a message..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+          />
+
+          <button onClick={sendMessage}>
+            Send
+          </button>
+
         </div>
 
       </div>
